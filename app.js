@@ -27,6 +27,7 @@ let _csvParsed = null;
 let focusMode  = false;
 let focusIndex = 0;
 let lastModifiedKey = null;
+let _confettiDone = false;
 const PAGE_SIZE = 50;
 let currentPage = 1;
 function loadLastModified() {
@@ -142,7 +143,7 @@ function goToPage(p) {
 function updateResumeBtn() {
   const btn = document.getElementById('btn-resume');
   if (!btn) return;
-  const hasAny = filteredData.some(c => { const s = state[getKey(c)] || {}; return s.status && s.status !== 'pending'; });
+  const hasAny = Object.values(state).some(s => s && s.status && s.status !== 'pending' && !s.deleted);
   btn.style.display = hasAny ? 'inline-flex' : 'none';
 }
 
@@ -323,6 +324,7 @@ updateResumeBtn();
 
 function populatePaeFilter() {
   const sel = document.getElementById('filter-pae');
+  if (!sel) return;
   sel.innerHTML = '<option value="">Tous les groupes</option>';
   const paes = [...new Set(ACTIVE_COMPANIES.map(c => c.nom_du_pae).filter(Boolean))].sort();
   paes.forEach(p => {
@@ -581,8 +583,6 @@ function toggleInterested(el) {
   saveState(key);
   updateRow(key);
 }
-
-let _confettiDone = false;
 
 function updateStats() {
   const total  = ACTIVE_COMPANIES.filter(c => !(state[getKey(c)] || {}).deleted).length;
