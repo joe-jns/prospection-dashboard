@@ -772,7 +772,7 @@ td.col-tel a:hover { opacity: 0.7; }
 <!-- CONTROLS -->
 <div class="controls">
   <div class="dataset-switcher">
-    <select id="ds-select" class="ctrl-select ds-select" onchange="switchDataset(this.value)"></select>
+    <select id="ds-select" class="ctrl-select ds-select" onchange="switchDataset(this.value)" title="Changer de liste de prospection"></select>
     <button class="btn btn-new-ds" onclick="openImportModal()" title="Importer un nouveau dataset CSV">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -790,7 +790,7 @@ td.col-tel a:hover { opacity: 0.7; }
     <input type="text" id="search" placeholder="Rechercher nom, activité, localité…" oninput="applyFilters()">
   </div>
 
-  <button class="btn btn-export" onclick="exportCSV()">
+  <button class="btn btn-export" onclick="exportCSV()" title="Exporte les entreprises du dataset actuel (filtrées si un filtre est actif) en fichier CSV">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
       <polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -798,7 +798,7 @@ td.col-tel a:hover { opacity: 0.7; }
     Export CSV
   </button>
 
-  <button class="btn btn-reset" onclick="resetAll()">
+  <button class="btn btn-reset" onclick="confirmReset()" title="Remet à zéro toute la progression du dataset actuel — ton ami perdra aussi ses données">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="1,4 1,10 7,10"/>
       <path d="M3.51 15a9 9 0 1 0 .49-3.84"/>
@@ -1284,8 +1284,44 @@ function exportCSV() {
   a.click();
 }
 
+function confirmReset() {
+  const dsName = dsMeta[currentDsId]?.name || 'ce dataset';
+  showConfirm(
+    'Réinitialiser la progression',
+    `Toute la progression de <b>${dsName}</b> sera effacée pour toi et ton ami. Cette action est irréversible.`,
+    'Réinitialiser',
+    resetAll
+  );
+}
+
+function showConfirm(title, body, confirmLabel, onConfirm) {
+  let overlay = document.getElementById('confirm-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'confirm-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:2000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)';
+    overlay.innerHTML = `
+      <div style="background:var(--surface);border-radius:14px;padding:28px 32px;width:400px;max-width:90vw;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.12)">
+        <p id="confirm-title" style="margin:0 0 8px;font-family:var(--font-ui);font-size:1rem;font-weight:800;color:var(--text)"></p>
+        <p id="confirm-body" style="margin:0 0 24px;font-size:0.83rem;color:var(--muted);line-height:1.5"></p>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button onclick="document.getElementById('confirm-overlay').style.display='none'" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:var(--font-ui);font-size:0.82rem;font-weight:600;cursor:pointer">Annuler</button>
+          <button id="confirm-ok" style="padding:8px 18px;border-radius:8px;border:none;background:var(--red);color:#fff;font-family:var(--font-ui);font-size:0.82rem;font-weight:700;cursor:pointer"></button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-body').innerHTML = body;
+  document.getElementById('confirm-ok').textContent = confirmLabel;
+  document.getElementById('confirm-ok').onclick = () => {
+    overlay.style.display = 'none';
+    onConfirm();
+  };
+  overlay.style.display = 'flex';
+}
+
 function resetAll() {
-  if (!confirm('Réinitialiser toute la progression ? Cette action est irréversible.')) return;
   state = {};
   saveState();
   activeCardFilter = '';
