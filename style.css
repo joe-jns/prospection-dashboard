@@ -697,6 +697,29 @@ tr:hover .menu-dots-btn { opacity: 1; }
 .row-dropdown-item.danger { color: var(--red); }
 .row-dropdown-item.danger:hover { background: var(--red-bg); }
 
+/* ── Remote cursors ─────────────────────────────────────────────── */
+#remote-cursors { position: fixed; inset: 0; pointer-events: none; z-index: 9998; }
+.remote-cursor {
+  position: absolute;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  transform: translate(0, 0);
+  pointer-events: none;
+  transition: left 0.08s linear, top 0.08s linear;
+}
+.remote-cursor-label {
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-top: 14px;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
 /* ── Pagination ──────────────────────────────────────────────────── */
 .pagination {
   display: flex;

@@ -196,22 +196,54 @@ const MY_UID = (() => {
   return uid;
 })();
 
+const CURSOR_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+function uidColor(uid) { let h=0; for(const c of uid) h=(h*31+c.charCodeAt(0))>>>0; return CURSOR_COLORS[h % CURSOR_COLORS.length]; }
+
 function setupPresence() {
   const myRef = _db.ref('presence/' + MY_UID);
-  function heartbeat() { myRef.set({ t: Date.now() }); }
-  heartbeat();
-  setInterval(heartbeat, 25000);
+  myRef.set({ t: Date.now() });
+  setInterval(() => myRef.update({ t: Date.now() }), 25000);
   window.addEventListener('beforeunload', () => myRef.remove());
+
+  // Envoi position curseur (throttlé 80ms)
+  let _lastCursor = 0;
+  document.addEventListener('mousemove', e => {
+    const now = Date.now();
+    if (now - _lastCursor < 80) return;
+    _lastCursor = now;
+    myRef.update({ cursor: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight }, t: now });
+  });
 
   _db.ref('presence').on('value', snap => {
     const data = snap.val() || {};
     const now = Date.now();
     const others = Object.entries(data).filter(([uid, v]) => uid !== MY_UID && v && (now - v.t) < 60000);
     const online = others.length > 0;
+
+    // Indicateur présence
     const dot = document.getElementById('presence-indicator');
-    if (!dot) return;
-    dot.className = 'presence-dot ' + (online ? 'presence-online' : 'presence-offline');
-    dot.dataset.tip = online ? 'Ton ami est en ligne' : 'Ami hors ligne';
+    if (dot) {
+      dot.className = 'presence-dot ' + (online ? 'presence-online' : 'presence-offline');
+      dot.dataset.tip = online ? 'Ton ami est en ligne' : 'Ami hors ligne';
+    }
+
+    // Curseurs distants
+    const container = document.getElementById('remote-cursors');
+    if (!container) return;
+    container.innerHTML = '';
+    others.forEach(([uid, v]) => {
+      if (!v.cursor) return;
+      const color = uidColor(uid);
+      const el = document.createElement('div');
+      el.className = 'remote-cursor';
+      el.style.cssText = `left:${v.cursor.x * 100}%;top:${v.cursor.y * 100}%`;
+      el.innerHTML = `
+        <svg width="16" height="20" viewBox="0 0 16 20" fill="${color}" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3))">
+          <path d="M0 0 L0 16 L4 12 L7 19 L9 18 L6 11 L11 11 Z"/>
+        </svg>
+        <span class="remote-cursor-label" style="background:${color}">Ami</span>`;
+      container.appendChild(el);
+    });
   });
 }
 // ─────────────────────────────────────────────────────────────────────────────
