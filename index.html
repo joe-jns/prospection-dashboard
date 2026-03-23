@@ -823,6 +823,12 @@ const BADGE_CONFIG = {
 function getKey(c) { return c.tva || c.nom; }
 function loadState() { try { state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { state = {}; } }
 
+// Firebase n'accepte pas . # $ / [ ] dans les clés → on encode/décode
+function fbEncode(k) { return k.replace(/\./g,'__d__').replace(/#/g,'__h__').replace(/\$/g,'__s__').replace(/\//g,'__sl__').replace(/\[/g,'__lb__').replace(/\]/g,'__rb__'); }
+function fbDecode(k) { return k.replace(/__d__/g,'.').replace(/__h__/g,'#').replace(/__s__/g,'$').replace(/__sl__/g,'/').replace(/__lb__/g,'[').replace(/__rb__/g,']'); }
+function stateToFb(s) { const o={}; for(const [k,v] of Object.entries(s)) o[fbEncode(k)]=v; return o; }
+function fbToState(o) { const s={}; for(const [k,v] of Object.entries(o)) s[fbDecode(k)]=v; return s; }
+
 // ── Firebase Realtime Sync ──────────────────────────────────────────────────
 const _fbConfig = {
   apiKey: "AIzaSyBg6jOokg-mlQot4rMRakbB2YqWVzqr-kA",
@@ -843,13 +849,13 @@ let _lastOwnPush   = 0;   // timestamp de notre dernier push
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   _lastOwnPush = Date.now();
-  _fbRef.set(state).catch(e => console.warn('Firebase save:', e));
+  _fbRef.set(stateToFb(state)).catch(e => console.warn('Firebase save:', e));
   updateSyncDot('saving');
 }
 
 // Listener temps réel
 _fbRef.on('value', snapshot => {
-  const remote = snapshot.val() || {};
+  const remote = fbToState(snapshot.val() || {});
 
   if (!_fbInitDone) {
     _fbInitDone = true;
@@ -858,7 +864,7 @@ _fbRef.on('value', snapshot => {
     state = merged;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     _lastOwnPush = Date.now();
-    _fbRef.set(state).catch(() => {});
+    _fbRef.set(stateToFb(state)).catch(() => {});
     applyFilters();
     updateSyncDot('ok');
     return;
