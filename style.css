@@ -696,6 +696,37 @@ tr:hover .menu-dots-btn { opacity: 1; }
 .row-dropdown-item.danger { color: var(--red); }
 .row-dropdown-item.danger:hover { background: var(--red-bg); }
 
+/* ── Pagination ──────────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 20px 0 32px;
+}
+.page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 6px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; cursor: default; }
+.page-btn:disabled { opacity: 0.35; cursor: default; }
+.page-btn.page-nav { font-size: 1rem; color: var(--muted); }
+.page-ellipsis { color: var(--muted); font-size: 0.85rem; padding: 0 2px; line-height: 34px; }
+
 /* Empty state */
 .empty-state {
   text-align: center;

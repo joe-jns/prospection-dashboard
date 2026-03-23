@@ -27,6 +27,8 @@ let _csvParsed = null;
 let focusMode  = false;
 let focusIndex = 0;
 let lastModifiedKey = null;
+const PAGE_SIZE = 50;
+let currentPage = 1;
 function loadLastModified() {
   lastModifiedKey = localStorage.getItem('last_modified_' + currentDsId) || null;
 }
@@ -93,11 +95,48 @@ function scrollToLast() {
   const idx = findResumeIndex();
   const c = filteredData[idx];
   if (!c) return;
-  const row = document.querySelector(`tr[data-key="${CSS.escape(getKey(c))}"]`);
-  if (!row) { showToast('Entreprise non visible avec les filtres actuels'); return; }
-  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  row.classList.add('row-highlight');
-  setTimeout(() => row.classList.remove('row-highlight'), 1800);
+  const targetPage = Math.floor(idx / PAGE_SIZE) + 1;
+  if (currentPage !== targetPage) {
+    currentPage = targetPage;
+    renderTable();
+    renderPagination();
+  }
+  setTimeout(() => {
+    const row = document.querySelector(`tr[data-key="${CSS.escape(getKey(c))}"]`);
+    if (!row) { showToast('Entreprise non visible avec les filtres actuels'); return; }
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.classList.add('row-highlight');
+    setTimeout(() => row.classList.remove('row-highlight'), 1800);
+  }, 50);
+}
+
+function renderPagination() {
+  const el = document.getElementById('pagination');
+  if (!el) return;
+  const total = Math.ceil(filteredData.length / PAGE_SIZE);
+  if (total <= 1) { el.innerHTML = ''; return; }
+
+  const pages = new Set([1, total]);
+  for (let i = Math.max(2, currentPage - 2); i <= Math.min(total - 1, currentPage + 2); i++) pages.add(i);
+  const sorted = [...pages].sort((a, b) => a - b);
+
+  let html = `<button class="page-btn page-nav" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  let prev = 0;
+  for (const p of sorted) {
+    if (p - prev > 1) html += `<span class="page-ellipsis">…</span>`;
+    html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+    prev = p;
+  }
+  html += `<button class="page-btn page-nav" onclick="goToPage(${currentPage + 1})" ${currentPage === total ? 'disabled' : ''}>›</button>`;
+  el.innerHTML = html;
+}
+
+function goToPage(p) {
+  const total = Math.ceil(filteredData.length / PAGE_SIZE);
+  currentPage = Math.max(1, Math.min(total, p));
+  renderTable();
+  renderPagination();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function updateResumeBtn() {
@@ -122,7 +161,7 @@ function setupFirebaseSync(dsId) {
       localStorage.setItem(currentStorageKey(), JSON.stringify(state));
       _lastOwnPush = Date.now();
       _fbRef.set(stateToFb(state)).catch(() => {});
-      applyFilters();
+      applyFilters(true);
       updateResumeBtn();
       updateSyncDot('ok');
       return;
@@ -133,7 +172,7 @@ function setupFirebaseSync(dsId) {
     if (changed) {
       state = merged;
       localStorage.setItem(currentStorageKey(), JSON.stringify(state));
-      applyFilters();
+      applyFilters(true);
       updateResumeBtn();
       if (!isOwnEcho) showToast('Ton ami a mis à jour des entreprises');
     }
@@ -275,7 +314,7 @@ function filterByCard(status) {
   applyFilters();
 }
 
-function applyFilters() {
+function applyFilters(keepPage = false) {
   const q = document.getElementById('search').value.toLowerCase();
 
   filteredData = ACTIVE_COMPANIES.filter(c => {
@@ -296,7 +335,9 @@ function applyFilters() {
     return av < bv ? -sortDir : av > bv ? sortDir : 0;
   });
 
+  if (!keepPage) currentPage = 1;
   renderTable();
+  renderPagination();
   updateStats();
 }
 
@@ -323,7 +364,8 @@ function renderTable() {
   }
   empty.style.display = 'none';
 
-  tbody.innerHTML = filteredData.map(c => {
+  const pageData = filteredData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  tbody.innerHTML = pageData.map(c => {
     const key    = getKey(c);
     const s      = state[key] || {};
     const status = s.status || 'pending';
