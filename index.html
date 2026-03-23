@@ -151,7 +151,7 @@
 
   <div class="focus-card" id="focus-card">
     <div id="focus-status-badge" class="focus-badge"></div>
-    <h2 id="focus-nom"></h2>
+    <h2 id="focus-nom" onclick="focusSearchCompany()" style="cursor:pointer" data-tip="Rechercher sur Google"></h2>
     <div class="focus-meta">
       <span id="focus-activite"></span>
       <span class="focus-sep" id="focus-sep">·</span>
@@ -167,7 +167,6 @@
         <span id="focus-web-text"></span>
       </a>
     </div>
-    <textarea id="focus-note" class="focus-note" placeholder="Notes…" oninput="saveFocusNote()"></textarea>
   </div>
 
   <div class="focus-actions">

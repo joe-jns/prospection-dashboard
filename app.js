@@ -78,9 +78,22 @@ function saveState(key) {
   updateResumeBtn();
 }
 
+// Trouve le premier index non traité après le dernier traité dans filteredData
+function findResumeIndex() {
+  let lastProcessed = -1;
+  for (let i = 0; i < filteredData.length; i++) {
+    const s = state[getKey(filteredData[i])] || {};
+    if (s.status && s.status !== 'pending') lastProcessed = i;
+  }
+  if (lastProcessed === -1) return 0;
+  return Math.min(lastProcessed + 1, filteredData.length - 1);
+}
+
 function scrollToLast() {
-  if (!lastModifiedKey) return;
-  const row = document.querySelector(`tr[data-key="${CSS.escape(lastModifiedKey)}"]`);
+  const idx = findResumeIndex();
+  const c = filteredData[idx];
+  if (!c) return;
+  const row = document.querySelector(`tr[data-key="${CSS.escape(getKey(c))}"]`);
   if (!row) { showToast('Entreprise non visible avec les filtres actuels'); return; }
   row.scrollIntoView({ behavior: 'smooth', block: 'center' });
   row.classList.add('row-highlight');
@@ -89,7 +102,9 @@ function scrollToLast() {
 
 function updateResumeBtn() {
   const btn = document.getElementById('btn-resume');
-  if (btn) btn.style.display = lastModifiedKey ? 'inline-flex' : 'none';
+  if (!btn) return;
+  const hasAny = filteredData.some(c => { const s = state[getKey(c)] || {}; return s.status && s.status !== 'pending'; });
+  btn.style.display = hasAny ? 'inline-flex' : 'none';
 }
 
 function setupFirebaseSync(dsId) {
@@ -162,7 +177,7 @@ function setupPresence() {
 
 // Fusionne deux états : garde le plus "avancé" pour chaque entreprise
 function mergeStates(base, incoming) {
-  const priority = { interested: 3, skip: 2, reviewed: 1, pending: 0 };
+  const priority = { interested: 3, skip: 2, done: 1, pending: 0 };
   const merged = Object.assign({}, base);
   for (const key of Object.keys(incoming)) {
     const a = base[key] || {};
@@ -309,9 +324,7 @@ function renderTable() {
     const key    = getKey(c);
     const s      = state[key] || {};
     const status = s.status || 'pending';
-    const notes  = s.notes  || '';
     const isDone = status === 'done' || status === 'interested';
-    const cfg    = BADGE_CONFIG[status];
 
     const statusLabels = {
       pending: 'À traiter', done: 'Vu', interested: 'Intéressant', skip: 'Pas pertinent'
@@ -728,11 +741,7 @@ function toggleFocusMode() {
   overlay.style.display = focusMode ? 'flex' : 'none';
   btn.classList.toggle('active', focusMode);
   if (focusMode) {
-    focusIndex = 0;
-    if (lastModifiedKey) {
-      const idx = filteredData.findIndex(c => getKey(c) === lastModifiedKey);
-      if (idx !== -1) focusIndex = Math.min(idx + 1, filteredData.length - 1);
-    }
+    focusIndex = findResumeIndex();
     renderFocusCard();
   }
 }
@@ -781,7 +790,6 @@ function renderFocusCard() {
   } else { webEl.style.display = 'none'; }
 
   // Note
-  document.getElementById('focus-note').value = s.notes || '';
 
   // Buttons active state
   ['interested', 'done', 'skip'].forEach(st => {
@@ -799,7 +807,7 @@ function focusAction(action) {
   if (!c) return;
   const key = getKey(c);
   if (!state[key]) state[key] = {};
-  state[key].status = state[key].status === action ? 'done' : action;
+  state[key].status = state[key].status === action ? 'pending' : action;
   saveState();
   renderFocusCard();
   // Auto-avance sur pas pertinent
@@ -808,13 +816,10 @@ function focusAction(action) {
   }
 }
 
-function saveFocusNote() {
+function focusSearchCompany() {
   const c = filteredData[focusIndex];
   if (!c) return;
-  const key = getKey(c);
-  if (!state[key]) state[key] = {};
-  state[key].notes = document.getElementById('focus-note').value;
-  saveState();
+  window.open('https://www.google.com/search?q=' + encodeURIComponent(c.nom), '_blank');
 }
 
 // Raccourcis clavier focus mode
