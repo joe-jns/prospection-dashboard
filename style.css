@@ -707,6 +707,129 @@ td.col-tel a:hover { opacity: 0.7; }
   transform: translateX(-50%) translateY(0);
 }
 
+/* ── Status cluster (sync + presence) ─────────────────────────────────────── */
+.status-cluster {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto; padding-left: 12px; border-left: 1px solid var(--border);
+}
+.sync-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;
+  flex-shrink: 0; transition: background 0.3s; cursor: default; position: relative;
+}
+.presence-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; cursor: default;
+  transition: background 0.3s; position: relative;
+}
+.presence-online  { background: #22c55e; animation: presence-pulse 2s ease-in-out infinite; }
+.presence-offline { background: var(--border-med); }
+@keyframes presence-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+  50%       { box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+}
+
+/* ── Focus mode button ─────────────────────────────────────────────────────── */
+.btn-resume {
+  background: transparent; border-color: var(--border); color: var(--muted);
+}
+.btn-resume:hover { border-color: var(--blue); color: var(--blue); }
+
+.btn-focus {
+  background: transparent; border-color: var(--border); color: var(--muted);
+}
+.btn-focus:hover  { border-color: var(--blue); color: var(--blue); }
+.btn-focus.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+@keyframes row-flash {
+  0%   { background: rgba(59,130,246,0.15); }
+  100% { background: transparent; }
+}
+.row-highlight { animation: row-flash 1.8s ease-out forwards; }
+
+/* ── Focus mode overlay ────────────────────────────────────────────────────── */
+#focus-overlay {
+  position: fixed; inset: 0; background: var(--bg); z-index: 900;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.focus-header {
+  position: fixed; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; border-bottom: 1px solid var(--border);
+  background: var(--surface); z-index: 901;
+}
+.focus-counter {
+  font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600;
+  color: var(--muted); min-width: 80px;
+}
+.focus-shortcuts {
+  font-size: 0.72rem; color: var(--muted); display: flex; align-items: center; gap: 4px;
+}
+.focus-shortcuts kbd {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
+  padding: 1px 5px; font-size: 0.68rem; font-family: var(--font-mono); color: var(--text-2);
+}
+.focus-close {
+  background: transparent; border: none; cursor: pointer; color: var(--muted);
+  padding: 4px; border-radius: 6px; display: flex; align-items: center;
+  transition: color 0.15s;
+}
+.focus-close:hover { color: var(--text); }
+
+.focus-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+  padding: 48px 56px; width: 100%; max-width: 620px; text-align: center;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.06);
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.focus-badge {
+  font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+  font-family: var(--font-ui); min-height: 22px;
+}
+.focus-card h2 {
+  font-family: var(--font-ui); font-size: 1.6rem; font-weight: 800;
+  color: var(--text); margin: 0; line-height: 1.2;
+}
+.focus-meta { font-size: 0.88rem; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.focus-sep  { color: var(--border-med); }
+.focus-links { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.focus-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; font-weight: 600; font-family: var(--font-ui);
+  padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+  text-decoration: none; color: var(--muted); transition: all 0.15s;
+}
+.focus-link-tel:hover { border-color: var(--blue); color: var(--blue); }
+.focus-link-web:hover { border-color: var(--accent); color: var(--accent); }
+.focus-note {
+  width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface2);
+  font-family: var(--font-ui); font-size: 0.82rem; color: var(--text);
+  resize: none; height: 72px; outline: none; transition: border-color 0.15s;
+}
+.focus-note:focus { border-color: var(--blue); }
+
+.focus-actions {
+  display: flex; align-items: center; gap: 10px; margin-top: 24px; flex-wrap: wrap; justify-content: center;
+}
+.focus-nav {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--surface); cursor: pointer; display: flex; align-items: center;
+  justify-content: center; color: var(--muted); transition: all 0.15s;
+}
+.focus-nav:hover { border-color: var(--text-2); color: var(--text); }
+.focus-btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px;
+  border-radius: 10px; border: 1.5px solid; font-family: var(--font-ui);
+  font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
+}
+.focus-btn:active { transform: scale(0.97); }
+.focus-btn-interested { border-color: var(--blue-ring); color: var(--blue); background: var(--blue-bg); }
+.focus-btn-interested:hover, .focus-btn-interested.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.focus-btn-done { border-color: var(--border); color: var(--muted); background: transparent; }
+.focus-btn-done:hover, .focus-btn-done.active { background: var(--surface2); color: var(--text); }
+.focus-btn-skip { border-color: var(--red-ring); color: var(--red); background: var(--red-bg); }
+.focus-btn-skip:hover, .focus-btn-skip.active { background: var(--red); color: #fff; border-color: var(--red); }
+
 @media (max-width: 768px) {
   header { padding: 0 16px; }
   .header-progress { display: none; }

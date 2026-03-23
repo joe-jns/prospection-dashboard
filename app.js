@@ -24,6 +24,9 @@ let sortDir = 1;
 let filteredData = [];
 let activeCardFilter = '';
 let _csvParsed = null;
+let focusMode  = false;
+let focusIndex = 0;
+let lastModifiedKey = null;
 
 const BADGE_CONFIG = {
   pending:    { label: 'À traiter',       dot: true },
@@ -59,11 +62,27 @@ let _fbListener    = null;
 let _fbInitDone    = false;
 let _lastOwnPush   = 0;
 
-function saveState() {
+function saveState(key) {
+  if (key) lastModifiedKey = key;
   localStorage.setItem(currentStorageKey(), JSON.stringify(state));
   _lastOwnPush = Date.now();
   if (_fbRef) _fbRef.set(stateToFb(state)).catch(e => console.warn('Firebase save:', e));
   updateSyncDot('saving');
+  updateResumeBtn();
+}
+
+function scrollToLast() {
+  if (!lastModifiedKey) return;
+  const row = document.querySelector(`tr[data-key="${CSS.escape(lastModifiedKey)}"]`);
+  if (!row) { showToast('Entreprise non visible avec les filtres actuels'); return; }
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  row.classList.add('row-highlight');
+  setTimeout(() => row.classList.remove('row-highlight'), 1800);
+}
+
+function updateResumeBtn() {
+  const btn = document.getElementById('btn-resume');
+  if (btn) btn.style.display = lastModifiedKey ? 'inline-flex' : 'none';
 }
 
 function setupFirebaseSync(dsId) {
@@ -106,6 +125,33 @@ function updateSyncDot(status) {
   dot.style.background = status === 'ok' ? '#22c55e' : status === 'saving' ? '#f59e0b' : '#ef4444';
 }
 // ────────────────────────────────────────────────────────────────────────────
+
+// ── Presence temps réel ───────────────────────────────────────────────────────
+const MY_UID = (() => {
+  let uid = localStorage.getItem('prospection_uid');
+  if (!uid) { uid = 'u_' + Math.random().toString(36).slice(2, 9); localStorage.setItem('prospection_uid', uid); }
+  return uid;
+})();
+
+function setupPresence() {
+  const myRef = _db.ref('presence/' + MY_UID);
+  function heartbeat() { myRef.set({ t: Date.now() }); }
+  heartbeat();
+  setInterval(heartbeat, 25000);
+  window.addEventListener('beforeunload', () => myRef.remove());
+
+  _db.ref('presence').on('value', snap => {
+    const data = snap.val() || {};
+    const now = Date.now();
+    const others = Object.entries(data).filter(([uid, v]) => uid !== MY_UID && v && (now - v.t) < 60000);
+    const online = others.length > 0;
+    const dot = document.getElementById('presence-indicator');
+    if (!dot) return;
+    dot.className = 'presence-dot ' + (online ? 'presence-online' : 'presence-offline');
+    dot.dataset.tip = online ? 'Ton ami est en ligne' : 'Ami hors ligne';
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Fusionne deux états : garde le plus "avancé" pour chaque entreprise
 function mergeStates(base, incoming) {
@@ -174,6 +220,7 @@ function showToast(msg) {
 loadDsMeta();
 loadState();
 setupFirebaseSync(currentDsId);
+setupPresence();
 populateDsSelect();
 populatePaeFilter();
 applyFilters();
@@ -366,7 +413,7 @@ function toggleCheck(el) {
   if (!state[key]) state[key] = {};
   const cur = state[key].status || 'pending';
   state[key].status = (cur === 'pending' || cur === 'skip') ? 'done' : 'pending';
-  saveState();
+  saveState(key);
   updateRow(key);
 }
 
@@ -374,7 +421,7 @@ function setStatus(el) {
   const key = el.dataset.key;
   if (!state[key]) state[key] = {};
   state[key].status = el.value;
-  saveState();
+  saveState(key);
   updateRow(key);
 }
 
@@ -382,7 +429,7 @@ function toggleSkip(el) {
   const key = el.dataset.key;
   if (!state[key]) state[key] = {};
   state[key].status = state[key].status === 'skip' ? 'pending' : 'skip';
-  saveState();
+  saveState(key);
   updateRow(key);
 }
 
@@ -390,7 +437,7 @@ function toggleInterested(el) {
   const key = el.dataset.key;
   if (!state[key]) state[key] = {};
   state[key].status = state[key].status === 'interested' ? 'done' : 'interested';
-  saveState();
+  saveState(key);
   updateRow(key);
 }
 
@@ -661,3 +708,110 @@ function openImportModal() {
 function closeImportModal() {
   document.getElementById('import-modal').style.display = 'none';
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FOCUS MODE
+// ══════════════════════════════════════════════════════════════════════════════
+function toggleFocusMode() {
+  focusMode = !focusMode;
+  const overlay = document.getElementById('focus-overlay');
+  const btn = document.getElementById('btn-focus');
+  overlay.style.display = focusMode ? 'flex' : 'none';
+  btn.classList.toggle('active', focusMode);
+  if (focusMode) { focusIndex = 0; renderFocusCard(); }
+}
+
+function renderFocusCard() {
+  const c = filteredData[focusIndex];
+  if (!c) return;
+  const key    = getKey(c);
+  const s      = state[key] || {};
+  const status = s.status || 'pending';
+
+  document.getElementById('focus-counter').textContent = `${focusIndex + 1} / ${filteredData.length}`;
+
+  // Badge
+  const badge = document.getElementById('focus-status-badge');
+  const cfg = { pending:'À traiter', done:'Vu', interested:'Intéressant', skip:'Pas pertinent' };
+  const colors = {
+    pending:    'background:var(--surface2);color:var(--muted)',
+    done:       'background:#dcfce7;color:#15803d',
+    interested: 'background:var(--blue-bg);color:var(--blue)',
+    skip:       'background:var(--red-bg);color:var(--red)',
+  };
+  badge.textContent = cfg[status] || '';
+  badge.style.cssText = colors[status] || '';
+
+  document.getElementById('focus-nom').textContent      = c.nom || '—';
+  document.getElementById('focus-activite').textContent = c.activite || '';
+  document.getElementById('focus-localite').textContent = c.localite || '';
+  document.getElementById('focus-sep').style.display    = (c.activite && c.localite) ? '' : 'none';
+
+  // Téléphone
+  const telEl = document.getElementById('focus-tel');
+  if (c.telephone) {
+    telEl.style.display = 'inline-flex';
+    telEl.href = 'tel:' + c.telephone;
+    document.getElementById('focus-tel-text').textContent = c.telephone;
+  } else { telEl.style.display = 'none'; }
+
+  // Site web
+  const webEl = document.getElementById('focus-web');
+  if (c.site_web) {
+    webEl.style.display = 'inline-flex';
+    const url = c.site_web.startsWith('http') ? c.site_web : 'https://' + c.site_web;
+    webEl.href = url;
+    document.getElementById('focus-web-text').textContent = c.site_web.replace(/^https?:\/\//, '');
+  } else { webEl.style.display = 'none'; }
+
+  // Note
+  document.getElementById('focus-note').value = s.notes || '';
+
+  // Buttons active state
+  ['interested', 'done', 'skip'].forEach(st => {
+    document.getElementById('fbtn-' + st).classList.toggle('active', status === st);
+  });
+}
+
+function focusMove(dir) {
+  focusIndex = Math.max(0, Math.min(filteredData.length - 1, focusIndex + dir));
+  renderFocusCard();
+}
+
+function focusAction(action) {
+  const c = filteredData[focusIndex];
+  if (!c) return;
+  const key = getKey(c);
+  if (!state[key]) state[key] = {};
+  state[key].status = state[key].status === action ? 'done' : action;
+  saveState();
+  renderFocusCard();
+  // Auto-avance sur pas pertinent
+  if (action === 'skip' && focusIndex < filteredData.length - 1) {
+    setTimeout(() => focusMove(1), 300);
+  }
+}
+
+function saveFocusNote() {
+  const c = filteredData[focusIndex];
+  if (!c) return;
+  const key = getKey(c);
+  if (!state[key]) state[key] = {};
+  state[key].notes = document.getElementById('focus-note').value;
+  saveState();
+}
+
+// Raccourcis clavier focus mode
+document.addEventListener('keydown', e => {
+  if (!focusMode) {
+    if (e.key === 'f' || e.key === 'F') { if (!e.target.matches('input,textarea')) toggleFocusMode(); }
+    return;
+  }
+  if (e.target.matches('textarea,input')) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); focusMove(1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); focusMove(-1); }
+  if (e.key === 'i' || e.key === 'I') focusAction('interested');
+  if (e.key === 'x' || e.key === 'X') focusAction('skip');
+  if (e.key === ' ')  { e.preventDefault(); focusAction('done'); }
+  if (e.key === 'Escape') toggleFocusMode();
+});
