@@ -231,7 +231,7 @@ header {
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 64px;
-  z-index: 100;
+  z-index: 201;
   box-shadow: var(--shadow-sm);
 }
 
@@ -787,7 +787,7 @@ tr:hover .menu-dots-btn { opacity: 1; }
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.15s ease, transform 0.15s ease;
-  z-index: 500;
+  z-index: 9999;
 }
 
 [data-tip]:hover::before {
