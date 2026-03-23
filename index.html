@@ -13,6 +13,7 @@
 </head>
 <body>
 <div id="remote-cursors"></div>
+<canvas id="confetti-canvas" style="display:none;position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9997"></canvas>
 
 <!-- HEADER -->
 <header>
@@ -78,6 +79,24 @@
     </div>
     <div class="stat-num" id="cnt-skip">—</div>
     <div class="stat-sub">écartées</div>
+  </div>
+</div>
+
+<!-- DUO STATS -->
+<div class="duo-stats" id="duo-stats" style="display:none">
+  <div class="duo-player duo-me">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    <span>Toi</span>
+    <strong id="duo-cnt-me">0</strong>
+  </div>
+  <div class="duo-bar-wrap">
+    <div class="duo-bar-me" id="duo-bar-me"></div>
+    <div class="duo-bar-ami" id="duo-bar-ami"></div>
+  </div>
+  <div class="duo-player duo-ami">
+    <strong id="duo-cnt-ami">0</strong>
+    <span>Ami</span>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
   </div>
 </div>
 

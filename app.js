@@ -520,11 +520,17 @@ function updateRow(key) {
   updateStats();
 }
 
+function setBy(key, status) {
+  if (status && status !== 'pending') state[key].by = MY_UID;
+  else delete state[key].by;
+}
+
 function toggleCheck(el) {
   const key = el.dataset.key;
   if (!state[key]) state[key] = {};
   const cur = state[key].status || 'pending';
   state[key].status = (cur === 'pending' || cur === 'skip') ? 'done' : 'pending';
+  setBy(key, state[key].status);
   saveState(key);
   updateRow(key);
 }
@@ -533,6 +539,7 @@ function setStatus(el) {
   const key = el.dataset.key;
   if (!state[key]) state[key] = {};
   state[key].status = el.value;
+  setBy(key, state[key].status);
   saveState(key);
   updateRow(key);
 }
@@ -541,6 +548,7 @@ function toggleSkip(el) {
   const key = el.dataset.key;
   if (!state[key]) state[key] = {};
   state[key].status = state[key].status === 'skip' ? 'pending' : 'skip';
+  setBy(key, state[key].status);
   saveState(key);
   updateRow(key);
 }
@@ -570,16 +578,26 @@ function toggleInterested(el) {
   const key = el.dataset.key;
   if (!state[key]) state[key] = {};
   state[key].status = state[key].status === 'interested' ? 'done' : 'interested';
+  setBy(key, state[key].status);
   saveState(key);
   updateRow(key);
 }
 
+let _confettiDone = false;
+
 function updateStats() {
-  const total  = ACTIVE_COMPANIES.length;
+  const total  = ACTIVE_COMPANIES.filter(c => !(state[getKey(c)] || {}).deleted).length;
   const counts = { pending:0, done:0, interested:0, skip:0 };
+  let myCount = 0, amiCount = 0;
   ACTIVE_COMPANIES.forEach(c => {
     const s = state[getKey(c)] || {};
-    counts[s.status || 'pending']++;
+    if (s.deleted) return;
+    const st = s.status || 'pending';
+    counts[st]++;
+    if (st !== 'pending') {
+      if (s.by === MY_UID) myCount++;
+      else if (s.by) amiCount++;
+    }
   });
   const treated = counts.done + counts.interested + counts.skip;
   const pct     = Math.round(treated / total * 100);
@@ -592,6 +610,62 @@ function updateStats() {
   document.getElementById('cnt-done').textContent       = counts.done;
   document.getElementById('cnt-interested').textContent = counts.interested;
   document.getElementById('cnt-skip').textContent       = counts.skip;
+
+  // Duo stats
+  const duoEl = document.getElementById('duo-stats');
+  const hasAny = myCount > 0 || amiCount > 0;
+  duoEl.style.display = hasAny ? 'flex' : 'none';
+  if (hasAny) {
+    document.getElementById('duo-cnt-me').textContent  = myCount;
+    document.getElementById('duo-cnt-ami').textContent = amiCount;
+    const total2 = myCount + amiCount || 1;
+    document.getElementById('duo-bar-me').style.width  = (myCount  / total2 * 100) + '%';
+    document.getElementById('duo-bar-ami').style.width = (amiCount / total2 * 100) + '%';
+  }
+
+  // Confetti si tout est traité
+  if (total > 0 && counts.pending === 0 && !_confettiDone) {
+    _confettiDone = true;
+    launchConfetti();
+  }
+  if (counts.pending > 0) _confettiDone = false;
+}
+
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+  const ctx = canvas.getContext('2d');
+  const cols = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#c2410c','#06b6d4'];
+  const particles = Array.from({ length: 140 }, () => ({
+    x: Math.random() * canvas.width, y: -20 - Math.random() * 100,
+    w: Math.random() * 10 + 5, h: Math.random() * 5 + 3,
+    color: cols[Math.floor(Math.random() * cols.length)],
+    vx: Math.random() * 4 - 2, vy: Math.random() * 4 + 2,
+    rot: Math.random() * 360, rotV: Math.random() * 8 - 4,
+    op: 1,
+  }));
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
+      if (p.y > canvas.height * 0.6) p.op -= 0.018;
+      if (p.op <= 0) return;
+      alive = true;
+      ctx.save();
+      ctx.globalAlpha = p.op;
+      ctx.fillStyle = p.color;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    if (alive) requestAnimationFrame(draw);
+    else canvas.style.display = 'none';
+  }
+  draw();
 }
 
 function exportCSV() {
@@ -926,6 +1000,7 @@ function focusAction(action) {
   const key = getKey(c);
   if (!state[key]) state[key] = {};
   state[key].status = state[key].status === action ? 'pending' : action;
+  setBy(key, state[key].status);
   saveState();
   renderFocusCard();
   // Auto-avance sur pas pertinent

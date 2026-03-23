@@ -640,6 +640,37 @@ td.col-tel a:hover { opacity: 0.7; }
   font-weight: 700;
 }
 
+/* ── Duo stats ───────────────────────────────────────────────────── */
+.duo-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.duo-player {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.duo-player strong { font-size: 1rem; font-weight: 800; color: var(--text); }
+.duo-bar-wrap {
+  flex: 1;
+  display: flex;
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--border);
+  gap: 2px;
+}
+.duo-bar-me  { background: #6366f1; height: 100%; border-radius: 99px 0 0 99px; transition: width 0.4s ease; }
+.duo-bar-ami { background: #f59e0b; height: 100%; border-radius: 0 99px 99px 0; transition: width 0.4s ease; }
+
 /* ── Row menu (3 dots) ───────────────────────────────────────────── */
 .col-menu { width: 36px; text-align: center; }
 .row-menu-wrap { position: relative; display: inline-block; }
