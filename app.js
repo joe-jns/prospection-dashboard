@@ -726,7 +726,7 @@ function launchConfetti() {
 
 function exportCSV() {
   const toExport = filteredData.length > 0 ? filteredData : ACTIVE_COMPANIES;
-  const cols = ['nom','activite','localite','nom_du_pae','telephone','fax','forme_juridique','tva','adresse','cp','statut','site_web','linkedin','prenom_contact','nom_contact','notes'];
+  const cols = ['nom','activite','localite','nom_du_pae','telephone','fax','forme_juridique','tva','adresse','cp','statut','site_web','linkedin','prenom_contact','nom_contact','tel_contact','notes'];
   const rows = [cols.join(';')];
   toExport.forEach(c => {
     const key = getKey(c);
@@ -736,7 +736,7 @@ function exportCSV() {
       c.nom, c.activite, c.localite, c.nom_du_pae, c.telephone, c.fax,
       c.forme_juridique, c.tva, c.adresse, c.cp,
       s.status || 'pending',
-      e.site || '', e.linkedin || '', e.prenom || '', e.nom || '', e.notes || ''
+      e.site || '', e.linkedin || '', e.prenom || '', e.nom || '', e.tel || '', e.notes || ''
     ].map(v => '"' + String(v||'').replace(/"/g,'""') + '"').join(';'));
   });
   const label = activeCardFilter ? `_${activeCardFilter}` : '';
@@ -1051,6 +1051,7 @@ function openEnrichModal(key) {
   document.getElementById('enrich-linkedin').value = e.linkedin || '';
   document.getElementById('enrich-prenom').value   = e.prenom   || '';
   document.getElementById('enrich-nom').value      = e.nom      || '';
+  document.getElementById('enrich-tel').value      = e.tel      || '';
   document.getElementById('enrich-notes').value    = e.notes    || '';
 
   document.getElementById('enrich-modal').style.display = 'flex';
@@ -1067,6 +1068,7 @@ function saveEnrich() {
     linkedin: document.getElementById('enrich-linkedin').value.trim(),
     prenom:   document.getElementById('enrich-prenom').value.trim(),
     nom:      document.getElementById('enrich-nom').value.trim(),
+    tel:      document.getElementById('enrich-tel').value.trim(),
     notes:    document.getElementById('enrich-notes').value.trim(),
   };
 
