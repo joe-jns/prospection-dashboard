@@ -13,7 +13,7 @@ function currentStorageKey() {
 }
 function loadDsMeta() {
   try { dsMeta = JSON.parse(localStorage.getItem(DS_META_KEY) || '{}'); } catch(e) { dsMeta = {}; }
-  if (!dsMeta.igretec) dsMeta.igretec = { name: 'Igretec PAE', isBuiltIn: true };
+  if (!dsMeta.igretec) dsMeta.igretec = { name: 'Dataset par défaut', isBuiltIn: true };
 }
 function saveDsMeta() { localStorage.setItem(DS_META_KEY, JSON.stringify(dsMeta)); }
 // ─────────────────────────────────────────────────────────────────────────────
@@ -180,6 +180,25 @@ function setupFirebaseSync(dsId) {
   _fbRef.on('value', _fbListener, () => updateSyncDot('err'));
 }
 
+function syncSharedDatasets() {
+  _db.ref('shared_datasets').on('value', snap => {
+    const remote = snap.val() || {};
+    let added = 0;
+    for (const [id, val] of Object.entries(remote)) {
+      if (!val || !val.name || !val.data) continue;
+      if (dsMeta[id]) continue; // déjà connu
+      dsMeta[id] = { name: val.name, isBuiltIn: false };
+      localStorage.setItem(DS_DATA_PFX + id, JSON.stringify(val.data));
+      added++;
+    }
+    if (added > 0) {
+      saveDsMeta();
+      populateDsSelect();
+      showToast(`${added} nouveau${added > 1 ? 'x' : ''} dataset${added > 1 ? 's' : ''} reçu${added > 1 ? 's' : ''}`);
+    }
+  });
+}
+
 function updateSyncDot(status) {
   const dot = document.getElementById('sync-dot');
   if (!dot) return;
@@ -318,6 +337,7 @@ loadState();
 loadLastModified();
 setupFirebaseSync(currentDsId);
 setupPresence();
+syncSharedDatasets();
 populateDsSelect();
 populatePaeFilter();
 applyFilters();
@@ -703,7 +723,7 @@ function exportCSV() {
   const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `igretec_prospection${label}.csv`;
+  a.download = `prospection${label}.csv`;
   a.click();
 }
 
@@ -911,6 +931,10 @@ function confirmImport() {
   dsMeta[dsId] = { name, isBuiltIn: false };
   saveDsMeta();
   localStorage.setItem(DS_DATA_PFX + dsId, JSON.stringify(companies));
+
+  // Partage le dataset avec l'ami via Firebase
+  _db.ref('shared_datasets/' + dsId).set({ name, data: companies })
+    .catch(e => console.warn('Firebase dataset sync:', e));
 
   closeImportModal();
   populateDsSelect();
