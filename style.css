@@ -1012,6 +1012,11 @@ td.col-tel a:hover { opacity: 0.7; }
   transition: all 0.13s;
 }
 .enrich-copy-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+.enrich-tva-display {
+  flex: 1; font-size: 0.85rem; font-family: var(--font-mono, monospace); font-weight: 600;
+  color: var(--text); background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; letter-spacing: 0.03em;
+}
 
 /* ── Duo stats ───────────────────────────────────────────────────── */
 .duo-stats {
@@ -1321,6 +1326,22 @@ tr:hover .menu-dots-btn { opacity: 1; }
 }
 .focus-link-tel:hover { border-color: var(--blue); color: var(--blue); }
 .focus-link-web:hover { border-color: var(--accent); color: var(--accent); }
+.focus-link-linkedin:hover { border-color: #0a66c2; color: #0a66c2; }
+.focus-tva {
+  font-size: 0.78rem; font-family: var(--font-mono, monospace); font-weight: 600;
+  color: var(--muted); background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 3px 10px; letter-spacing: 0.04em;
+}
+.focus-enrich-contact {
+  font-size: 0.83rem; color: var(--text); font-weight: 500;
+}
+.focus-enrich-contact #focus-contact-email { color: var(--muted); font-size: 0.8rem; }
+.focus-enrich-notes {
+  width: 100%; box-sizing: border-box; max-width: 460px;
+  font-size: 0.8rem; color: var(--muted); font-style: italic;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 14px; text-align: left; white-space: pre-wrap;
+}
 .focus-note {
   width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: 10px;
   border: 1px solid var(--border); background: var(--surface2);
@@ -1350,6 +1371,15 @@ tr:hover .menu-dots-btn { opacity: 1; }
 .focus-btn-done:hover, .focus-btn-done.active { background: var(--surface2); color: var(--text); }
 .focus-btn-skip { border-color: var(--red-ring); color: var(--red); background: var(--red-bg); }
 .focus-btn-skip:hover, .focus-btn-skip.active { background: var(--red); color: #fff; border-color: var(--red); }
+.focus-enrich-row { margin-top: 4px; }
+.focus-enrich-open-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.78rem; font-weight: 600; font-family: var(--font-ui);
+  padding: 5px 14px; border-radius: 8px; border: 1px dashed var(--border);
+  background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s;
+}
+.focus-enrich-open-btn:hover { border-color: var(--accent); color: var(--accent); border-style: solid; }
+.focus-enrich-open-btn.enriched { border-style: solid; border-color: var(--accent); color: var(--accent); background: var(--surface2); }
 
 @media (max-width: 768px) {
   header { padding: 0 16px; }

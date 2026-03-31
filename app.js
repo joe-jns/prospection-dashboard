@@ -1383,6 +1383,15 @@ function openEnrichModal(key) {
   document.getElementById('enrich-email').value    = e.email    || '';
   document.getElementById('enrich-notes').value    = e.notes    || '';
 
+  // TVA (lecture seule — donnée brute)
+  const tvaRow = document.getElementById('enrich-tva-row');
+  if (company && company.tva) {
+    document.getElementById('enrich-tva-display').textContent = company.tva;
+    tvaRow.style.display = '';
+  } else {
+    tvaRow.style.display = 'none';
+  }
+
   document.getElementById('enrich-modal').style.display = 'flex';
   document.getElementById('enrich-site').focus();
 }
@@ -1419,6 +1428,7 @@ function saveEnrich() {
   if (btn) btn.classList.toggle('enriched', hasData);
 
   closeEnrichModal();
+  if (focusMode) renderFocusCard();
   showToast(hasData ? 'Données enregistrées' : 'Données effacées');
 }
 
@@ -1481,12 +1491,13 @@ function renderFocusCard(dir) {
   document.getElementById('focus-localite').textContent = c.localite || '';
   document.getElementById('focus-sep').style.display    = (c.activite && c.localite) ? '' : 'none';
 
-  // Téléphone
+  // Téléphone (brut ou enrichi)
   const telEl = document.getElementById('focus-tel');
-  if (c.telephone) {
+  const telVal = c.telephone || (s.enrich && s.enrich.tel) || '';
+  if (telVal) {
     telEl.style.display = 'inline-flex';
-    telEl.href = 'tel:' + c.telephone;
-    document.getElementById('focus-tel-text').textContent = c.telephone;
+    telEl.href = 'tel:' + telVal;
+    document.getElementById('focus-tel-text').textContent = telVal;
   } else { telEl.style.display = 'none'; }
 
   // Site web
@@ -1498,12 +1509,57 @@ function renderFocusCard(dir) {
     document.getElementById('focus-web-text').textContent = c.site_web.replace(/^https?:\/\//, '');
   } else { webEl.style.display = 'none'; }
 
-  // Note
+  // Données enrichies
+  const enrichData = s.enrich || {};
+
+  // LinkedIn (enrichi)
+  const linkedinEl = document.getElementById('focus-linkedin');
+  if (enrichData.linkedin) {
+    linkedinEl.style.display = 'inline-flex';
+    const liUrl = enrichData.linkedin.startsWith('http') ? enrichData.linkedin : 'https://' + enrichData.linkedin;
+    linkedinEl.href = liUrl;
+  } else { linkedinEl.style.display = 'none'; }
+
+  // Site enrichi (si pas de site_web brut)
+  if (!c.site_web && enrichData.site) {
+    webEl.style.display = 'inline-flex';
+    const url = enrichData.site.startsWith('http') ? enrichData.site : 'https://' + enrichData.site;
+    webEl.href = url;
+    document.getElementById('focus-web-text').textContent = enrichData.site.replace(/^https?:\/\//, '');
+  }
+
+  // TVA
+  const tvaEl = document.getElementById('focus-tva');
+  if (c.tva) {
+    tvaEl.style.display = '';
+    tvaEl.textContent = c.tva;
+  } else { tvaEl.style.display = 'none'; }
+
+  // Contact enrichi (prénom/nom + email)
+  const contactEl = document.getElementById('focus-enrich-contact');
+  const contactName = [enrichData.prenom, enrichData.nom].filter(Boolean).join(' ');
+  const contactEmail = enrichData.email || '';
+  if (contactName || contactEmail) {
+    contactEl.style.display = '';
+    document.getElementById('focus-contact-name').textContent = contactName;
+    const sepEl = document.getElementById('focus-contact-email-sep');
+    sepEl.style.display = (contactName && contactEmail) ? '' : 'none';
+    document.getElementById('focus-contact-email').textContent = contactEmail;
+  } else { contactEl.style.display = 'none'; }
+
+  // Notes enrichies
+  const notesEl = document.getElementById('focus-enrich-notes');
+  if (enrichData.notes) {
+    notesEl.style.display = '';
+    notesEl.textContent = enrichData.notes;
+  } else { notesEl.style.display = 'none'; }
 
   // Buttons active state
   ['interested', 'done', 'skip'].forEach(st => {
     document.getElementById('fbtn-' + st).classList.toggle('active', status === st);
   });
+  const hasEnrich = Object.values(enrichData).some(v => v);
+  document.getElementById('fbtn-enrich').classList.toggle('enriched', hasEnrich);
 }
 
 function focusMove(dir) {
@@ -1530,6 +1586,12 @@ function focusSearchCompany() {
   const c = filteredData[focusIndex];
   if (!c) return;
   window.open('https://www.google.com/search?q=' + encodeURIComponent(c.nom), '_blank');
+}
+
+function focusOpenEnrich() {
+  const c = filteredData[focusIndex];
+  if (!c) return;
+  openEnrichModal(getKey(c));
 }
 
 // Raccourcis clavier focus mode
