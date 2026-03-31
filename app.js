@@ -1285,18 +1285,16 @@ function renderStatsPage() {
   });
 }
 
-// ── Leaderboard hidden users ──────────────────────────────────────────────────
-let _lbHidden = new Set(JSON.parse(localStorage.getItem('lb_hidden') || '[]'));
-
-function lbHideUser(uid) {
-  _lbHidden.add(uid);
-  localStorage.setItem('lb_hidden', JSON.stringify([..._lbHidden]));
-  renderStatsPage();
-}
-
-function lbRestoreUser(uid) {
-  _lbHidden.delete(uid);
-  localStorage.setItem('lb_hidden', JSON.stringify([..._lbHidden]));
+// ── Leaderboard delete user ───────────────────────────────────────────────────
+function lbDeleteUser(uid, name) {
+  if (!confirm(`Supprimer définitivement "${name}" du leaderboard ?\n\nToutes ses contributions (prospection + enrichissement) seront effacées.`)) return;
+  for (const key of Object.keys(state)) {
+    const s = state[key];
+    if (!s) continue;
+    if (s.by === uid) { delete s.by; s.status = 'pending'; }
+    if (s.enrich_by === uid) { delete s.enrich_by; delete s.enrich; }
+  }
+  saveState(null);
   renderStatsPage();
 }
 
@@ -1304,11 +1302,8 @@ function renderLeaderboard(uidList, us, getColor, getName) {
   const container = document.getElementById('stats-leaderboard');
   if (!container) return;
 
-  const visible = uidList.filter(u => !_lbHidden.has(u));
-  const hidden  = uidList.filter(u =>  _lbHidden.has(u));
-
   // Sort by treated desc
-  const sorted = [...visible].sort((a, b) => (us[b].treated - us[a].treated));
+  const sorted = [...uidList].sort((a, b) => (us[b].treated - us[a].treated));
 
   const posLabels = ['🥇', '🥈', '🥉'];
   const isMe = uid => uid === MY_UID;
@@ -1331,8 +1326,8 @@ function renderLeaderboard(uidList, us, getColor, getName) {
 
     const posLabel = idx < 3 ? `<span class="lb-pos-emoji">${posLabels[idx]}</span>` : `<span class="lb-pos-num">#${idx + 1}</span>`;
     const deleteBtn = !isMe(uid)
-      ? `<button class="lb-delete-btn" onclick="lbHideUser('${uid}')" title="Retirer du leaderboard">
-           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      ? `<button class="lb-delete-btn" onclick="lbDeleteUser('${uid}', '${name.replace(/'/g, "\\'")}')" title="Supprimer définitivement">
+           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/><path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1V6"/></svg>
          </button>`
       : '';
 
@@ -1363,23 +1358,7 @@ function renderLeaderboard(uidList, us, getColor, getName) {
 
   const mainList = sorted.map((uid, idx) => cardHtml(uid, idx)).join('');
 
-  const hiddenSection = hidden.length > 0
-    ? `<div class="lb-hidden-section">
-        <div class="lb-hidden-title">Masqués (${hidden.length})</div>
-        ${hidden.map(uid => {
-          const color = getColor(uid);
-          const name = getName(uid);
-          const init = (name[0] || '?').toUpperCase();
-          return `<div class="lb-hidden-row">
-            <div class="lb-avatar lb-avatar-sm" style="background:${color}">${init}</div>
-            <span class="lb-hidden-name">${name}</span>
-            <button class="lb-restore-btn" onclick="lbRestoreUser('${uid}')">Restaurer</button>
-          </div>`;
-        }).join('')}
-      </div>`
-    : '';
-
-  container.innerHTML = `<div class="lb-list">${mainList}</div>${hiddenSection}`;
+  container.innerHTML = `<div class="lb-list">${mainList}</div>`;
 }
 
 // ENRICH MODAL

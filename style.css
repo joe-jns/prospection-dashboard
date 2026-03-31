@@ -640,29 +640,6 @@ select.ds-select {
 .lb-card:hover .lb-delete-btn { opacity: 1; }
 .lb-delete-btn:hover { background: var(--red); border-color: var(--red); color: #fff; }
 
-.lb-hidden-section {
-  margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px;
-  display: flex; flex-direction: column; gap: 8px;
-}
-.lb-hidden-title {
-  font-family: var(--font-ui); font-size: 0.72rem; font-weight: 700;
-  color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em;
-}
-.lb-hidden-row {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 10px; padding: 8px 14px;
-}
-.lb-avatar-sm { width: 28px; height: 28px; font-size: 0.75rem; }
-.lb-hidden-name { flex: 1; font-family: var(--font-ui); font-size: 0.83rem; color: var(--text-2); }
-.lb-restore-btn {
-  font-family: var(--font-ui); font-size: 0.75rem; font-weight: 600;
-  padding: 4px 10px; border-radius: 6px; cursor: pointer;
-  border: 1px solid var(--border); background: var(--bg); color: var(--text-2);
-  transition: background 0.12s, color 0.12s;
-}
-.lb-restore-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
-
 /* Modal import CSV */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 1000;
